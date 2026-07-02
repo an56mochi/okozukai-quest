@@ -1,0 +1,6 @@
+# Windows専用の起動バッチはローカル用（公開不要）
+start_app.bat
+
+# OS/エディタ
+.DS_Store
+Thumbs.db

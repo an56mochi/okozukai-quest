@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#fff7ec">
+<title>おこづかいクエスト</title>
+<style>
+:root{
+  --bg:#fff7ec; --card:#ffffff; --ink:#4a3f35; --sub:#a08c78;
+  --coral:#ff8a5c; --coral-d:#f06a3a; --teal:#3ec6b0; --teal-d:#2aa392;
+  --gold:#ffc93c; --lav:#b28dff; --line:#f3e5d3;
+  --shadow:0 4px 14px rgba(160,120,80,.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:"Hiragino Maru Gothic ProN","BIZ UDGothic","Yu Gothic UI",system-ui,sans-serif;
+  background:var(--bg);color:var(--ink);min-height:100dvh;padding-bottom:84px;
+  background-image:radial-gradient(#ffe9cf 1.6px,transparent 1.6px);background-size:26px 26px}
+button{font-family:inherit;border:none;cursor:pointer;color:inherit;background:none}
+input,select{font-family:inherit;font-size:16px;border:2px solid var(--line);border-radius:12px;
+  padding:10px 12px;width:100%;background:#fff;color:var(--ink)}
+input:focus,select:focus{outline:none;border-color:var(--coral)}
+
+/* header */
+header{padding:14px 16px 6px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+header h1{font-size:15px;letter-spacing:.5px;white-space:nowrap}
+.kid-switch{display:flex;gap:6px;flex-shrink:0}
+.kid-chip{padding:6px 10px;border-radius:999px;background:#fff;border:2px solid var(--line);
+  font-size:12px;font-weight:700;color:var(--sub);white-space:nowrap}
+.kid-chip.on{background:var(--coral);border-color:var(--coral);color:#fff;box-shadow:var(--shadow)}
+
+main{padding:8px 16px 16px;max-width:520px;margin:0 auto}
+.card{background:var(--card);border-radius:20px;padding:18px;box-shadow:var(--shadow);margin-bottom:14px}
+
+/* home */
+.balance-card{text-align:center;position:relative;overflow:hidden}
+.balance-card .pig{font-size:56px;display:inline-block;transition:transform .2s}
+.balance-card .pig.bounce{animation:bounce .6s}
+@keyframes bounce{0%,100%{transform:scale(1)}30%{transform:scale(1.25) rotate(-6deg)}60%{transform:scale(.95)}}
+.balance-label{font-size:12px;color:var(--sub);font-weight:700;letter-spacing:2px}
+.balance{font-size:44px;font-weight:800;letter-spacing:1px;margin:2px 0 8px}
+.balance small{font-size:22px}
+.level-row{display:flex;align-items:center;gap:8px;justify-content:center;margin-top:4px}
+.level-badge{background:var(--lav);color:#fff;font-size:12px;font-weight:800;padding:3px 10px;border-radius:999px}
+.bar{flex:1;max-width:180px;height:10px;background:var(--line);border-radius:999px;overflow:hidden}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--lav),#8f6bff);border-radius:999px;transition:width .5s}
+.bar.gold>i{background:linear-gradient(90deg,var(--gold),#ffab2e)}
+.bar.teal>i{background:linear-gradient(90deg,var(--teal),var(--teal-d))}
+
+.allowance-btn{width:100%;padding:16px;border-radius:16px;font-size:17px;font-weight:800;color:#fff;
+  background:linear-gradient(135deg,var(--gold),#ff9e2e);box-shadow:0 6px 0 #d98a1c;margin-bottom:14px;
+  animation:pulse 1.6s infinite}
+.allowance-btn:active{transform:translateY(4px);box-shadow:0 2px 0 #d98a1c}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+
+.goal-mini{display:flex;align-items:center;gap:12px}
+.goal-mini .g-emoji{font-size:34px}
+.goal-mini .g-body{flex:1}
+.goal-mini .g-name{font-weight:800;font-size:14px}
+.goal-mini .g-rest{font-size:12px;color:var(--sub);margin-top:2px}
+.section-title{font-size:14px;font-weight:800;color:var(--sub);margin:4px 2px 8px;letter-spacing:1px}
+.badge-row{display:flex;gap:8px;flex-wrap:wrap}
+.badge{width:52px;height:52px;border-radius:16px;background:#fff;border:2px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-size:24px;filter:grayscale(1);opacity:.35}
+.badge.got{filter:none;opacity:1;border-color:var(--gold);background:#fff9e8;box-shadow:var(--shadow)}
+
+/* quests */
+.quest-item{display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;background:#fff;
+  box-shadow:var(--shadow);margin-bottom:10px}
+.quest-item .q-emoji{font-size:30px;width:44px;text-align:center}
+.quest-item .q-name{flex:1;font-weight:800;font-size:15px}
+.quest-item .q-reward{font-size:13px;font-weight:800;color:var(--teal-d)}
+.q-btn{background:var(--teal);color:#fff;font-weight:800;font-size:14px;padding:10px 14px;border-radius:12px;
+  box-shadow:0 4px 0 var(--teal-d);white-space:nowrap}
+.q-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--teal-d)}
+
+/* goal */
+.goal-big{text-align:center}
+.goal-big .g-emoji{font-size:64px}
+.goal-big h2{font-size:20px;margin:6px 0}
+.goal-big .price{color:var(--sub);font-weight:700;margin-bottom:10px}
+.goal-big .bar{max-width:100%;height:16px;margin:10px auto}
+.goal-big .pct{font-size:26px;font-weight:800;color:var(--teal-d)}
+.goal-big .rest{font-size:13px;color:var(--sub);margin-top:6px}
+.buy-btn{width:100%;padding:16px;border-radius:16px;font-size:17px;font-weight:800;color:#fff;margin-top:14px;
+  background:linear-gradient(135deg,var(--coral),var(--coral-d));box-shadow:0 6px 0 #c94f22}
+.buy-btn:active{transform:translateY(4px);box-shadow:0 2px 0 #c94f22}
+
+/* log */
+.log-item{display:flex;align-items:center;gap:10px;padding:11px 4px;border-bottom:1px dashed var(--line)}
+.log-item:last-child{border-bottom:none}
+.log-date{font-size:11px;color:var(--sub);width:52px}
+.log-label{flex:1;font-size:14px;font-weight:700}
+.log-amount{font-weight:800;font-size:15px}
+.log-amount.plus{color:var(--teal-d)}
+.log-amount.minus{color:var(--coral-d)}
+
+/* settings */
+.set-row{margin-bottom:14px}
+.set-row label{display:block;font-size:12px;font-weight:800;color:var(--sub);margin-bottom:5px}
+.set-inline{display:flex;gap:8px}
+.mini-btn{background:var(--coral);color:#fff;font-weight:800;font-size:13px;padding:9px 14px;border-radius:12px;white-space:nowrap}
+.mini-btn.gray{background:#cbb9a5}
+.mini-btn.teal{background:var(--teal)}
+.q-edit{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.q-edit .del{color:var(--coral-d);font-weight:800;font-size:18px;padding:4px 8px}
+textarea{width:100%;border:2px solid var(--line);border-radius:12px;padding:10px;font-size:12px;
+  font-family:monospace;min-height:80px;background:#fff;color:var(--ink)}
+
+/* primary button */
+.big-btn{width:100%;padding:15px;border-radius:16px;font-size:16px;font-weight:800;color:#fff;
+  background:linear-gradient(135deg,var(--teal),var(--teal-d));box-shadow:0 5px 0 #1d8071;margin-top:6px}
+.big-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #1d8071}
+
+/* tabs */
+nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:2px solid var(--line);
+  display:flex;justify-content:space-around;padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:20}
+.tab{flex:1;text-align:center;padding:6px 2px;border-radius:12px;color:var(--sub)}
+.tab .t-icon{font-size:22px;display:block}
+.tab .t-label{font-size:10px;font-weight:800}
+.tab.on{color:var(--coral-d);background:#fff1e5}
+
+/* modal */
+.modal-wrap{position:fixed;inset:0;background:rgba(74,63,53,.45);display:flex;align-items:center;
+  justify-content:center;z-index:50;padding:20px}
+.modal{background:#fff;border-radius:22px;padding:22px;width:100%;max-width:380px;text-align:center;
+  animation:pop .25s}
+@keyframes pop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+.modal h3{font-size:17px;margin-bottom:8px}
+.modal p{font-size:13px;color:var(--sub);margin-bottom:14px;line-height:1.7}
+.modal .m-emoji{font-size:52px;display:block;margin-bottom:6px}
+.modal-btns{display:flex;gap:10px;margin-top:6px}
+.modal-btns button{flex:1;padding:13px;border-radius:14px;font-weight:800;font-size:15px}
+.m-ok{background:var(--teal);color:#fff;box-shadow:0 4px 0 var(--teal-d)}
+.m-cancel{background:#f0e6d8;color:var(--sub)}
+
+/* celebrate */
+.cheer{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:60;pointer-events:none}
+.cheer .c-text{font-size:30px;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--coral),var(--gold));
+  padding:18px 30px;border-radius:24px;box-shadow:0 10px 30px rgba(240,106,58,.4);animation:cheerIn 1.8s forwards}
+@keyframes cheerIn{0%{transform:scale(.3);opacity:0}15%{transform:scale(1.1);opacity:1}25%{transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:scale(1) translateY(-20px)}}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:55}
+
+/* setup */
+.setup{max-width:420px;margin:0 auto;padding:40px 24px;text-align:center}
+.setup h1{font-size:24px;margin:10px 0 4px}
+.setup p{color:var(--sub);font-size:13px;margin-bottom:22px}
+.setup .card{text-align:left}
+.empty{text-align:center;color:var(--sub);font-size:13px;padding:24px 8px;line-height:1.8}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<canvas id="confetti"></canvas>
+<script>
+"use strict";
+/* ===== データ ===== */
+const KEY = "okozukai.v1";
+const QUEST_PRESETS = [
+  {emoji:"🍽️", name:"おさらあらい", reward:30},
+  {emoji:"🛁", name:"おふろそうじ", reward:50},
+  {emoji:"👕", name:"せんたくものたたみ", reward:30},
+  {emoji:"🗑️", name:"ゴミすて", reward:20},
+  {emoji:"🧹", name:"そうじきがけ", reward:40},
+];
+const BADGES = [
+  {id:"first",  emoji:"🌱", name:"はじめてのちょきん"},
+  {id:"q10",    emoji:"⚔️", name:"クエスト10回"},
+  {id:"q30",    emoji:"🛡️", name:"クエスト30回"},
+  {id:"e1000",  emoji:"💰", name:"1,000円ためた"},
+  {id:"e5000",  emoji:"👑", name:"5,000円ためた"},
+  {id:"e10000", emoji:"💎", name:"10,000円ためた"},
+  {id:"goal",   emoji:"🏆", name:"もくひょうたっせい"},
+  {id:"allow3", emoji:"📅", name:"おこづかい3回うけとり"},
+];
+const EMOJIS = ["🎮","📱","🧸","📚","🚲","⚽","🎨","🎧","👟","💍","🍰","✈️","🐹","⌚","🎹","🎁"];
+
+function newKid(name, emoji){
+  return {name, emoji, balance:0, totalEarned:0, questCount:0, allowCount:0,
+    lastAllowance:null,
+    allowance:{amount:500, cycle:"monthly", day:1, weekday:0},
+    goal:null,
+    quests: QUEST_PRESETS.map((q,i)=>({id:"p"+i, ...q})),
+    history:[], badges:[]};
+}
+let S = load();
+function load(){
+  try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && d.kids && d.kids.length) return d; }catch(e){}
+  return null;
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(S)); }
+
+let view = "home";
+let modal = null; // {type, ...}
+
+/* ===== ユーティリティ ===== */
+const $ = s => document.querySelector(s);
+const yen = n => "¥" + Number(n||0).toLocaleString("ja-JP");
+const esc = s => String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function kid(){ return S.kids[S.active]; }
+function fmtDate(ts){ const d=new Date(ts); return (d.getMonth()+1)+"/"+d.getDate(); }
+function level(k){ return Math.floor(k.totalEarned/1000)+1; }
+function levelPct(k){ return Math.round((k.totalEarned%1000)/10); }
+
+/* ===== おこづかい支給判定 ===== */
+function lastDueDate(k){
+  const now = new Date(); const a = k.allowance;
+  if(a.cycle==="monthly"){
+    const day = Math.min(a.day, 28);
+    let d = new Date(now.getFullYear(), now.getMonth(), day);
+    if(d > now) d = new Date(now.getFullYear(), now.getMonth()-1, day);
+    return d;
+  }else{
+    const d = new Date(now); d.setHours(0,0,0,0);
+    const diff = (d.getDay() - a.weekday + 7) % 7;
+    d.setDate(d.getDate() - diff);
+    return d;
+  }
+}
+function allowanceDue(k){
+  if(!k.allowance.amount) return false;
+  const due = lastDueDate(k);
+  return !k.lastAllowance || new Date(k.lastAllowance) < due;
+}
+
+/* ===== 入金・バッジ ===== */
+function credit(k, label, amount, type){
+  k.balance += amount;
+  if(amount > 0) k.totalEarned += amount;
+  k.history.unshift({ts:Date.now(), label, amount, type});
+  if(k.history.length > 300) k.history.length = 300;
+  checkBadges(k);
+  save();
+}
+function checkBadges(k){
+  const got = [];
+  const add = id => { if(!k.badges.includes(id)){ k.badges.push(id); got.push(id); } };
+  if(k.totalEarned > 0) add("first");
+  if(k.questCount >= 10) add("q10");
+  if(k.questCount >= 30) add("q30");
+  if(k.totalEarned >= 1000) add("e1000");
+  if(k.totalEarned >= 5000) add("e5000");
+  if(k.totalEarned >= 10000) add("e10000");
+  if(k.allowCount >= 3) add("allow3");
+  if(got.length){
+    const b = BADGES.find(x=>x.id===got[0]);
+    setTimeout(()=>cheer(b.emoji + " バッジかくとく！", b.name), 900);
+  }
+}
+
+/* ===== 演出 ===== */
+function cheer(text, sub){
+  const el = document.createElement("div");
+  el.className = "cheer";
+  el.innerHTML = '<div class="c-text">'+esc(text)+(sub?'<div style="font-size:14px;margin-top:4px">'+esc(sub)+'</div>':'')+'</div>';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 1900);
+}
+function confetti(){
+  const cv = $("#confetti"); const ctx = cv.getContext("2d");
+  cv.width = innerWidth; cv.height = innerHeight;
+  const colors = ["#ff8a5c","#ffc93c","#3ec6b0","#b28dff","#ff6b9d"];
+  const ps = Array.from({length:90}, ()=>({
+    x: Math.random()*cv.width, y: -20 - Math.random()*cv.height*0.4,
+    vx:(Math.random()-.5)*2.4, vy: 2.5+Math.random()*3.5,
+    s: 6+Math.random()*7, r: Math.random()*Math.PI, vr:(Math.random()-.5)*.25,
+    c: colors[Math.floor(Math.random()*colors.length)]
+  }));
+  const t0 = performance.now();
+  (function tick(t){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ps.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.r+=p.vr;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r);
+      ctx.fillStyle=p.c; ctx.fillRect(-p.s/2,-p.s/2,p.s,p.s); ctx.restore(); });
+    if(t - t0 < 2200) requestAnimationFrame(tick); else ctx.clearRect(0,0,cv.width,cv.height);
+  })(t0);
+}
+
+/* ===== 画面描画 ===== */
+function render(){
+  if(!S){ renderSetup(); return; }
+  const k = kid();
+  let html = '<header><h1>🪙 おこづかいクエスト</h1><div class="kid-switch">' +
+    S.kids.map((c,i)=>'<button class="kid-chip'+(i===S.active?" on":"")+'" onclick="switchKid('+i+')">'+esc(c.emoji+" "+c.name)+'</button>').join("") +
+    '</div></header><main>';
+  if(view==="home") html += homeView(k);
+  else if(view==="quest") html += questView(k);
+  else if(view==="goal") html += goalView(k);
+  else if(view==="log") html += logView(k);
+  else html += setView(k);
+  html += "</main>" + navBar() + (modal ? modalView() : "");
+  $("#app").innerHTML = html;
+}
+function navBar(){
+  const tabs = [["home","🏠","ホーム"],["quest","⚔️","クエスト"],["goal","🎯","もくひょう"],["log","📖","きろく"],["set","⚙️","せってい"]];
+  return "<nav>" + tabs.map(t=>'<button class="tab'+(view===t[0]?" on":"")+'" onclick="go(\''+t[0]+'\')"><span class="t-icon">'+t[1]+'</span><span class="t-label">'+t[2]+"</span></button>").join("") + "</nav>";
+}
+
+function homeView(k){
+  const lv = level(k);
+  let h = '<div class="card balance-card"><span class="pig" id="pig">🐷</span>' +
+    '<div class="balance-label">いまのちょきん</div>' +
+    '<div class="balance"><small>¥</small>'+Number(k.balance).toLocaleString("ja-JP")+'</div>' +
+    '<div class="level-row"><span class="level-badge">Lv.'+lv+'</span><div class="bar"><i style="width:'+levelPct(k)+'%"></i></div></div>' +
+    '<div style="font-size:11px;color:var(--sub);margin-top:6px">あと '+yen(1000-(k.totalEarned%1000))+' ためると レベルアップ！</div></div>';
+  if(allowanceDue(k)){
+    h += '<button class="allowance-btn" onclick="openModal({type:\'allowance\'})">🎁 おこづかい '+yen(k.allowance.amount)+' をうけとる！</button>';
+  }
+  if(k.goal){
+    const pct = Math.min(100, Math.round(k.balance/k.goal.price*100));
+    h += '<div class="card goal-mini" onclick="go(\'goal\')"><span class="g-emoji">'+esc(k.goal.emoji)+'</span>' +
+      '<div class="g-body"><div class="g-name">'+esc(k.goal.name)+'</div>' +
+      '<div class="bar teal" style="margin:6px 0"><i style="width:'+pct+'%"></i></div>' +
+      '<div class="g-rest">'+(k.balance>=k.goal.price ? "たっせい！🎉" : "あと "+yen(k.goal.price-k.balance))+'</div></div>' +
+      '<div style="font-weight:800;color:var(--teal-d)">'+pct+'%</div></div>';
+  }else{
+    h += '<div class="card goal-mini" onclick="go(\'goal\')"><span class="g-emoji">🎯</span>' +
+      '<div class="g-body"><div class="g-name">もくひょうをきめよう！</div>' +
+      '<div class="g-rest">ほしいものをとうろくすると やるきアップ⤴</div></div></div>';
+  }
+  h += '<div class="section-title">🏅 バッジコレクション</div><div class="card"><div class="badge-row">' +
+    BADGES.map(b=>'<div class="badge'+(k.badges.includes(b.id)?" got":"")+'" title="'+esc(b.name)+'">'+b.emoji+"</div>").join("") +
+    '</div></div>';
+  return h;
+}
+
+function questView(k){
+  let h = '<div class="section-title">⚔️ おてつだいクエスト（'+k.questCount+'回クリア）</div>';
+  if(!k.quests.length) h += '<div class="card empty">クエストがまだないよ。<br>「せってい」でついかしてね！</div>';
+  k.quests.forEach(q=>{
+    h += '<div class="quest-item"><span class="q-emoji">'+esc(q.emoji)+'</span>' +
+      '<div><div class="q-name">'+esc(q.name)+'</div><div class="q-reward">ほうび '+yen(q.reward)+'</div></div>' +
+      '<div style="flex:1"></div>' +
+      '<button class="q-btn" onclick="openModal({type:\'quest\',qid:\''+q.id+'\'})">できた！</button></div>';
+  });
+  h += '<div class="card empty" style="margin-top:12px">できたら「できた！」をおして、<br>おうちのひとに かくにんしてもらおう😊</div>';
+  return h;
+}
+
+function goalView(k){
+  if(!k.goal){
+    return '<div class="section-title">🎯 もくひょうをきめる</div><div class="card">' +
+      '<div class="set-row"><label>ほしいもの</label><input id="g-name" placeholder="れい：スイッチのソフト"></div>' +
+      '<div class="set-row"><label>ねだん（円）</label><input id="g-price" type="number" inputmode="numeric" placeholder="れい：6000"></div>' +
+      '<div class="set-row"><label>マークをえらぶ</label><div class="badge-row" id="g-emojis">' +
+      EMOJIS.map((e,i)=>'<button class="badge got" style="font-size:22px" onclick="pickEmoji(this)" data-e="'+e+'">'+e+"</button>").join("") +
+      '</div></div><button class="big-btn" onclick="setGoal()">もくひょうにする！</button></div>';
+  }
+  const g = k.goal;
+  const pct = Math.min(100, Math.round(k.balance/g.price*100));
+  const rest = g.price - k.balance;
+  let estimate = "";
+  const monthly = (k.allowance.cycle==="monthly" ? k.allowance.amount : k.allowance.amount*4.3);
+  if(rest > 0 && monthly > 0){
+    const m = Math.ceil(rest/monthly);
+    estimate = 'おこづかいだけなら あと'+m+'かげつくらい。<br>クエストをがんばれば もっとはやい！💪';
+  }
+  let h = '<div class="card goal-big"><span class="g-emoji">'+esc(g.emoji)+'</span>' +
+    '<h2>'+esc(g.name)+'</h2><div class="price">'+yen(g.price)+'</div>' +
+    '<div class="pct">'+pct+'%</div>' +
+    '<div class="bar teal"><i style="width:'+pct+'%"></i></div>';
+  if(rest > 0){
+    h += '<div class="rest">あと '+yen(rest)+'！ '+ (estimate?'<br><span style="font-size:12px">'+estimate+'</span>':'') +'</div>';
+  }else{
+    h += '<div class="rest" style="color:var(--coral-d);font-weight:800;font-size:16px">たっせい！おめでとう🎉</div>' +
+      '<button class="buy-btn" onclick="openModal({type:\'buy\'})">🛍️ かう！（'+yen(g.price)+' つかう）</button>';
+  }
+  h += '</div><button class="mini-btn gray" style="width:100%;padding:12px" onclick="openModal({type:\'delGoal\'})">もくひょうをやめる・かえる</button>';
+  return h;
+}
+
+function logView(k){
+  let h = '<div class="section-title">📖 ちょきんのきろく</div>';
+  h += '<div class="card"><div class="set-inline">' +
+    '<button class="mini-btn" style="flex:1;padding:12px" onclick="openModal({type:\'spend\'})">💸 つかった</button>' +
+    '<button class="mini-btn teal" style="flex:1;padding:12px" onclick="openModal({type:\'deposit\'})">➕ そのほかの入金</button>' +
+    '</div></div>';
+  if(!k.history.length) return h + '<div class="card empty">まだきろくがないよ。<br>クエストやおこづかいで ちょきんしよう！</div>';
+  h += '<div class="card">' + k.history.slice(0,60).map(e=>{
+    const plus = e.amount >= 0;
+    return '<div class="log-item"><span class="log-date">'+fmtDate(e.ts)+'</span>' +
+      '<span class="log-label">'+esc(e.label)+'</span>' +
+      '<span class="log-amount '+(plus?"plus":"minus")+'">'+(plus?"+":"−")+yen(Math.abs(e.amount)).slice(1)+'円</span></div>';
+  }).join("") + "</div>";
+  return h;
+}
+
+function setView(k){
+  const a = k.allowance;
+  let h = '<div class="section-title">⚙️ せってい（おうちのひとむけ）</div>';
+  h += '<div class="card"><div class="set-row"><label>なまえ</label><div class="set-inline">' +
+    '<input id="s-name" value="'+esc(k.name)+'"><input id="s-emoji" value="'+esc(k.emoji)+'" style="width:64px;text-align:center">' +
+    '<button class="mini-btn" onclick="saveName()">保存</button></div></div></div>';
+  h += '<div class="card"><div class="set-row"><label>定額おこづかい</label><div class="set-inline">' +
+    '<input id="s-amount" type="number" inputmode="numeric" value="'+a.amount+'" style="width:100px">' +
+    '<select id="s-cycle" onchange="render_cycle_hint()">' +
+    '<option value="monthly"'+(a.cycle==="monthly"?" selected":"")+'>毎月</option>' +
+    '<option value="weekly"'+(a.cycle==="weekly"?" selected":"")+'>毎週</option></select>' +
+    '<select id="s-day">' + (a.cycle==="monthly"
+      ? Array.from({length:28},(_,i)=>'<option value="'+(i+1)+'"'+(a.day===i+1?" selected":"")+'>'+(i+1)+'日</option>').join("")
+      : ["日","月","火","水","木","金","土"].map((w,i)=>'<option value="'+i+'"'+(a.weekday===i?" selected":"")+'>'+w+'曜</option>').join("")) +
+    '</select></div><div style="font-size:11px;color:var(--sub);margin-top:6px">支給日になるとホームに「うけとる」ボタンが出ます</div>' +
+    '<button class="mini-btn teal" style="margin-top:8px" onclick="saveAllowance()">おこづかい設定を保存</button></div></div>';
+  h += '<div class="card"><div class="set-row"><label>クエスト（おてつだい）の管理</label>' +
+    k.quests.map(q=>'<div class="q-edit"><span>'+esc(q.emoji)+'</span><span style="flex:1">'+esc(q.name)+'</span>' +
+      '<span style="color:var(--teal-d);font-weight:800">'+yen(q.reward)+'</span>' +
+      '<button class="del" onclick="delQuest(\''+q.id+'\')">×</button></div>').join("") +
+    '<div class="set-inline" style="margin-top:10px">' +
+    '<input id="nq-emoji" placeholder="🧺" style="width:56px;text-align:center">' +
+    '<input id="nq-name" placeholder="おてつだいの名前">' +
+    '<input id="nq-reward" type="number" inputmode="numeric" placeholder="円" style="width:76px">' +
+    '<button class="mini-btn" onclick="addQuest()">追加</button></div></div></div>';
+  h += '<div class="card"><div class="set-row"><label>データのバックアップ</label>' +
+    '<div class="set-inline"><button class="mini-btn teal" onclick="exportData()">書き出し</button>' +
+    '<button class="mini-btn" onclick="importData()">読み込み</button></div>' +
+    '<textarea id="s-backup" placeholder="「書き出し」でここにデータが出ます。べつの端末に貼り付けて「読み込み」すると引っこしできます"></textarea></div>' +
+    '<button class="mini-btn gray" onclick="openModal({type:\'reset\'})">ぜんぶリセット</button></div>';
+  return h;
+}
+
+/* ===== モーダル ===== */
+function modalView(){
+  const k = kid(); const m = modal;
+  let inner = "";
+  if(m.type==="quest"){
+    const q = k.quests.find(x=>x.id===m.qid);
+    inner = '<span class="m-emoji">'+esc(q.emoji)+'</span><h3>「'+esc(q.name)+'」できた？</h3>' +
+      '<p>おうちのひとに このがめんを見せて<br>かくにんしてもらってね！</p>' +
+      '<div class="modal-btns"><button class="m-cancel" onclick="closeModal()">まだ</button>' +
+      '<button class="m-ok" onclick="approveQuest(\''+q.id+'\')">OK！ '+yen(q.reward)+'</button></div>';
+  }else if(m.type==="allowance"){
+    inner = '<span class="m-emoji">🎁</span><h3>おこづかい '+yen(k.allowance.amount)+'</h3>' +
+      '<p>おうちのひとといっしょに<br>「うけとる」をおしてね</p>' +
+      '<div class="modal-btns"><button class="m-cancel" onclick="closeModal()">やめる</button>' +
+      '<button class="m-ok" onclick="receiveAllowance()">うけとる！</button></div>';
+  }else if(m.type==="buy"){
+    inner = '<span class="m-emoji">'+esc(k.goal.emoji)+'</span><h3>'+esc(k.goal.name)+' をかう？</h3>' +
+      '<p>ちょきんから '+yen(k.goal.price)+' つかいます</p>' +
+      '<div class="modal-btns"><button class="m-cancel" onclick="closeModal()">やめる</button>' +
+      '<button class="m-ok" onclick="buyGoal()">かう！🎉</button></div>';
+  }else if(m.type==="delGoal"){
+    inner = '<span class="m-emoji">🎯</span><h3>もくひょうをやめる？</h3><p>ちょきんはそのままのこるよ</p>' +
+      '<div class="modal-btns"><button class="m-cancel" onclick="closeModal()">やめない</button>' +
+      '<button class="m-ok" onclick="clearGoal()">やめる</button></div>';
+  }else if(m.type==="spend"){
+    inner = '<span class="m-emoji">💸</span><h3>つかったきろく</h3>' +
+      '<div class="set-row" style="text-align:left"><label>なにに？</label><input id="m-label" placeholder="れい：おかし"></div>' +
+      '<div class="set-row" style="text-align:left"><label>いくら？（円）</label><input id="m-amount" type="number" inputmode="numeric"></div>' +
+      '<div class="modal-btns"><button class="m-cancel" onclick="closeModal()">やめる</button>' +
+      '<button class="m-ok" onclick="spend()">きろくする</button></div>';
+  }else if(m.type==="deposit"){
+    inner = '<span class="m-emoji">💝</span><h3>そのほかの入金</h3>' +
+      '<p>おとしだま・おいわいなど</p>' +
+      '<div class="set-row" style="text-align:left"><label>なんのお金？</label><input id="m-label" placeholder="れい：おとしだま"></div>' +
+      '<div class="set-row" style="text-align:left"><label>いくら？（円）</label><input id="m-amount" type="number" inputmode="numeric"></div>' +
+      '<div class="modal-btns"><button class="m-cancel" onclick="closeModal()">やめる</button>' +
+      '<button class="m-ok" onclick="deposit()">入金する</button></div>';
+  }else if(m.type==="reset"){
+    inner = '<span class="m-emoji">⚠️</span><h3>ぜんぶリセットする？</h3><p>この端末のデータが全部消えます。<br>先に「書き出し」でバックアップを！</p>' +
+      '<div class="modal-btns"><button class="m-cancel" onclick="closeModal()">やめる</button>' +
+      '<button class="m-ok" style="background:var(--coral-d)" onclick="resetAll()">リセット</button></div>';
+  }
+  return '<div class="modal-wrap" onclick="if(event.target===this)closeModal()"><div class="modal">'+inner+'</div></div>';
+}
+
+/* ===== アクション ===== */
+function go(v){ view = v; modal = null; render(); }
+function switchKid(i){ S.active = i; save(); render(); }
+function openModal(m){ modal = m; render(); }
+function closeModal(){ modal = null; render(); }
+
+function approveQuest(qid){
+  const k = kid(); const q = k.quests.find(x=>x.id===qid);
+  k.questCount++;
+  credit(k, "⚔️ "+q.name, q.reward, "quest");
+  modal = null; render(); confetti(); cheer("+"+yen(q.reward)+"！", "クエストクリア！");
+  const pig = $("#pig"); if(pig) pig.classList.add("bounce");
+}
+function receiveAllowance(){
+  const k = kid();
+  k.lastAllowance = Date.now(); k.allowCount++;
+  credit(k, "🎁 おこづかい", k.allowance.amount, "allowance");
+  modal = null; render(); confetti(); cheer("+"+yen(k.allowance.amount)+"！", "おこづかいゲット！");
+}
+function pickEmoji(btn){
+  document.querySelectorAll("#g-emojis .badge").forEach(b=>b.style.borderColor="var(--gold)");
+  btn.style.borderColor = "var(--coral-d)";
+  btn.closest("#g-emojis").dataset.picked = btn.dataset.e;
+}
+function setGoal(){
+  const name = $("#g-name").value.trim();
+  const price = parseInt($("#g-price").value, 10);
+  const emoji = $("#g-emojis").dataset.picked || "🎁";
+  if(!name || !price || price<=0){ alert("なまえと ねだんを 入れてね！"); return; }
+  kid().goal = {name, price, emoji}; save(); render(); cheer("🎯 もくひょうセット！", name);
+}
+function clearGoal(){ kid().goal = null; save(); modal=null; render(); }
+function buyGoal(){
+  const k = kid(); const g = k.goal;
+  credit(k, "🛍️ "+g.name, -g.price, "spend");
+  if(!k.badges.includes("goal")){ k.badges.push("goal"); }
+  k.goal = null; save(); modal = null; render(); confetti();
+  cheer("🏆 おめでとう！", g.name+" を手に入れた！");
+}
+function spend(){
+  const label = $("#m-label").value.trim() || "おかいもの";
+  const amount = parseInt($("#m-amount").value, 10);
+  if(!amount || amount<=0){ alert("金額を入れてね"); return; }
+  credit(kid(), "💸 "+label, -amount, "spend");
+  modal = null; render();
+}
+function deposit(){
+  const label = $("#m-label").value.trim() || "入金";
+  const amount = parseInt($("#m-amount").value, 10);
+  if(!amount || amount<=0){ alert("金額を入れてね"); return; }
+  credit(kid(), "💝 "+label, amount, "manual");
+  modal = null; render(); confetti(); cheer("+"+yen(amount)+"！");
+}
+function saveName(){
+  const k = kid();
+  k.name = $("#s-name").value.trim() || k.name;
+  k.emoji = $("#s-emoji").value.trim() || k.emoji;
+  save(); render();
+}
+function render_cycle_hint(){ // 周期変更時に日付選択を作り直す
+  kid().allowance.cycle = $("#s-cycle").value; save(); render();
+}
+function saveAllowance(){
+  const a = kid().allowance;
+  a.amount = parseInt($("#s-amount").value,10) || 0;
+  a.cycle = $("#s-cycle").value;
+  if(a.cycle==="monthly") a.day = parseInt($("#s-day").value,10) || 1;
+  else a.weekday = parseInt($("#s-day").value,10) || 0;
+  save(); render(); cheer("✅ 保存しました");
+}
+function addQuest(){
+  const emoji = $("#nq-emoji").value.trim() || "⭐";
+  const name = $("#nq-name").value.trim();
+  const reward = parseInt($("#nq-reward").value,10);
+  if(!name || !reward){ alert("名前と金額を入れてください"); return; }
+  kid().quests.push({id:"q"+Date.now(), emoji, name, reward});
+  save(); render();
+}
+function delQuest(id){
+  const k = kid();
+  k.quests = k.quests.filter(q=>q.id!==id);
+  save(); render();
+}
+function exportData(){
+  $("#s-backup").value = JSON.stringify(S);
+  $("#s-backup").select();
+  try{ document.execCommand("copy"); cheer("📋 コピーしました"); }catch(e){}
+}
+function importData(){
+  try{
+    const d = JSON.parse($("#s-backup").value);
+    if(!d.kids || !d.kids.length) throw 0;
+    S = d; save(); render(); cheer("✅ 読み込みました");
+  }catch(e){ alert("データの形式がちがうみたい…「書き出し」した文字をそのまま貼ってね"); }
+}
+function resetAll(){ localStorage.removeItem(KEY); S = null; modal = null; render(); }
+
+/* ===== 初期設定 ===== */
+function renderSetup(){
+  $("#app").innerHTML = '<div class="setup"><div style="font-size:64px">🐷</div>' +
+    '<h1>おこづかいクエスト</h1><p>ちょきんが たのしくなる アプリだよ！<br>つかうひとの なまえを おしえてね</p>' +
+    '<div class="card"><div class="set-row"><label>1人目のなまえ</label><input id="setup-n1" placeholder="れい：はなこ"></div>' +
+    '<div class="set-row"><label>2人目のなまえ（いなければ空欄でOK）</label><input id="setup-n2" placeholder="れい：たろう"></div>' +
+    '<button class="big-btn" onclick="startApp()">はじめる！🎉</button></div>' +
+    '<p style="margin-top:14px">データはこの端末の中だけに保存されます</p></div>';
+}
+function startApp(){
+  const n1 = $("#setup-n1").value.trim();
+  const n2 = $("#setup-n2").value.trim();
+  if(!n1){ alert("1人目のなまえを入れてね"); return; }
+  const kids = [newKid(n1, "🌸")];
+  if(n2) kids.push(newKid(n2, "🚀"));
+  S = {ver:1, active:0, kids};
+  save(); render(); confetti(); cheer("ようこそ！🎉");
+}
+
+render();
+</script>
+</body>
+</html>
