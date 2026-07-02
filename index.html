@@ -99,6 +99,21 @@ main{padding:8px 16px 16px;max-width:520px;margin:0 auto}
 .log-del{color:var(--sub);font-size:13px;font-weight:800;padding:6px 4px 6px 8px;opacity:.5;flex-shrink:0}
 .log-del:active{color:var(--coral-d);opacity:1}
 
+/* かけいぼ */
+.kb-sum{display:flex;gap:8px;margin-bottom:10px}
+.kb-chip{flex:1;border-radius:12px;padding:8px 4px;text-align:center;background:var(--bg)}
+.kb-chip.in .kb-val{color:var(--teal-d)}
+.kb-chip.out .kb-val{color:var(--coral-d)}
+.kb-chip.left{background:#fff9e8;border:1.5px solid var(--gold)}
+.kb-label{font-size:10px;color:var(--sub);font-weight:800}
+.kb-val{font-size:15px;font-weight:800}
+.kb-quest{font-size:11px;color:var(--sub);margin-bottom:8px;background:var(--bg);border-radius:10px;padding:7px 10px;line-height:1.6}
+details.kb-closed{margin-top:12px}
+.kb-closed summary{cursor:pointer;font-weight:800;font-size:13px;color:var(--sub);display:flex;flex-wrap:wrap;gap:5px;align-items:center;list-style:none}
+.kb-closed summary::-webkit-details-marker{display:none}
+.kb-closed-sum{font-weight:700;font-size:11px;color:var(--ink);background:var(--bg);border-radius:8px;padding:3px 8px}
+.questrow{opacity:.72}
+
 /* log */
 .log-item{display:flex;align-items:center;gap:10px;padding:11px 4px;border-bottom:1px dashed var(--line)}
 .log-item:last-child{border-bottom:none}
@@ -192,6 +207,7 @@ function newKid(name, emoji){
   return {name, emoji, balance:0, totalEarned:0, questCount:0, allowCount:0,
     lastAllowance:null,
     month:{earned:0, quests:0},
+    closedMonths:[],
     allowance:{amount:500, cycle:"monthly", day:1, weekday:0},
     goal:null,
     quests: QUEST_PRESETS.map((q,i)=>({id:"p"+i, ...q})),
@@ -201,7 +217,7 @@ let S = load();
 function load(){
   try{ const d = JSON.parse(localStorage.getItem(KEY));
     if(d && d.kids && d.kids.length){
-      d.kids.forEach(k=>{ if(!k.month) k.month={earned:0, quests:0}; }); // v1→v2移行
+      d.kids.forEach(k=>{ if(!k.month) k.month={earned:0, quests:0}; if(!k.closedMonths) k.closedMonths=[]; }); // 旧データ移行
       return d;
     } }catch(e){}
   return null;
@@ -217,6 +233,8 @@ const yen = n => "¥" + Number(n||0).toLocaleString("ja-JP");
 const esc = s => String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function kid(){ return S.kids[S.active]; }
 function fmtDate(ts){ const d=new Date(ts); return (d.getMonth()+1)+"/"+d.getDate(); }
+function monthKeyOf(ts){ const d=new Date(ts); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
+function monthLabel(key){ const p=key.split("-"); return p[0]+"年"+parseInt(p[1],10)+"月"; }
 function level(k){ return Math.floor(k.totalEarned/1000)+1; }
 function levelPct(k){ return Math.round((k.totalEarned%1000)/10); }
 
@@ -310,7 +328,7 @@ function render(){
   $("#app").innerHTML = html;
 }
 function navBar(){
-  const tabs = [["home","🏠","ホーム"],["quest","⚔️","クエスト"],["goal","🎯","もくひょう"],["log","📖","きろく"],["set","⚙️","せってい"]];
+  const tabs = [["home","🏠","ホーム"],["quest","⚔️","クエスト"],["goal","🎯","もくひょう"],["log","📖","かけいぼ"],["set","⚙️","せってい"]];
   return "<nav>" + tabs.map(t=>'<button class="tab'+(view===t[0]?" on":"")+'" onclick="go(\''+t[0]+'\')"><span class="t-icon">'+t[1]+'</span><span class="t-label">'+t[2]+"</span></button>").join("") + "</nav>";
 }
 
@@ -396,35 +414,58 @@ function goalView(k){
 }
 
 function logView(k){
-  let h = '<div class="section-title">📖 おこづかいちょう</div>';
+  let h = '<div class="section-title">📖 かけいぼ（もらった・つかったの管理）</div>';
   h += '<div class="card"><div class="set-inline">' +
-    '<button class="mini-btn" style="flex:1;padding:12px" onclick="openModal({type:\'spend\'})">💸 つかった（きろく）</button>' +
-    '<button class="mini-btn teal" style="flex:1;padding:12px" onclick="openModal({type:\'deposit\'})">➕ そのほかの入金</button>' +
+    '<button class="mini-btn" style="flex:1;padding:12px" onclick="openModal({type:\'spend\'})">💸 つかった</button>' +
+    '<button class="mini-btn teal" style="flex:1;padding:12px" onclick="openModal({type:\'deposit\'})">💝 もらった（入金）</button>' +
     '</div></div>';
-  if(!k.history.length) return h + '<div class="card empty">まだきろくがないよ。<br>クエストやおこづかいで ちょきんしよう！</div>';
-  // 月ごとにグループ化して、その月のおてつだい回数・かせぎを見出しに出す
-  const groups=[];
-  let cur=null;
-  k.history.slice(0,120).forEach((e,idx)=>{
-    const d=new Date(e.ts); const key=d.getFullYear()+'年'+(d.getMonth()+1)+'月';
-    if(!cur||cur.key!==key){ cur={key,items:[],quests:0,qsum:0}; groups.push(cur); }
+  if(!k.history.length) return h + '<div class="card empty">まだきろくがないよ。<br>おこづかいをうけとったり、つかったら<br>ここにたまっていくよ！</div>';
+  const groups=[]; let cur=null;
+  k.history.slice(0,200).forEach((e,idx)=>{
+    const key=monthKeyOf(e.ts);
+    if(!cur||cur.key!==key){ cur={key,items:[]}; groups.push(cur); }
     cur.items.push({e,idx});
-    if(e.type==='quest'){ cur.quests++; cur.qsum+=e.amount; }
   });
   groups.forEach(g=>{
-    h += '<div class="section-title" style="margin-top:12px">📅 '+g.key+
-      '　<span style="color:var(--teal-d)">⚔️'+g.quests+'回・'+yen(g.qsum)+'</span></div>';
-    h += '<div class="card">' + g.items.map(x=>{
-      const e=x.e;
-      const isMemo = e.type==='memo';
-      const plus = e.amount >= 0;
-      return '<div class="log-item'+(isMemo?' memo':'')+'"><span class="log-date">'+fmtDate(e.ts)+'</span>' +
-        '<span class="log-label">'+esc(e.label)+(isMemo?'<span class="memo-chip">きろく</span>':'')+'</span>' +
-        '<span class="log-amount '+(isMemo?'':(plus?'plus':'minus'))+'">'+(plus?'+':'−')+yen(Math.abs(e.amount)).slice(1)+'円</span>' +
-        '<button class="log-del" title="とりけす" onclick="openModal({type:\'undo\',idx:'+x.idx+'})">✕</button></div>';
-    }).join("") + '</div>';
+    const closed = k.closedMonths.includes(g.key);
+    let inc=0, out=0, q=0, qsum=0;
+    g.items.forEach(x=>{ const e=x.e;
+      if(e.type==='quest'){ q++; qsum+=e.amount; }
+      else if(e.amount>0) inc+=e.amount;
+      else out+=Math.abs(e.amount);
+    });
+    const left=inc-out;
+    const rows=g.items.map(x=>ledgerRow(x.e,x.idx,closed)).join('');
+    if(closed){
+      h += '<details class="card kb-closed"><summary>🔒 '+monthLabel(g.key)+'　' +
+        '<span class="kb-closed-sum">もらった '+yen(inc)+'・つかった '+yen(out)+'・のこり <b>'+yen(left)+'</b></span></summary>' +
+        rows +
+        '<button class="mini-btn gray" style="width:100%;margin-top:10px" onclick="openModal({type:\'openMonth\',key:\''+g.key+'\'})">🔓 しめきりをとりけす（おうちのひと用）</button>' +
+        '</details>';
+    }else{
+      h += '<div class="section-title" style="margin-top:14px">📖 '+monthLabel(g.key)+'</div>';
+      h += '<div class="card">' +
+        '<div class="kb-sum">' +
+        '<div class="kb-chip in"><div class="kb-label">もらった</div><div class="kb-val">+'+yen(inc).slice(1)+'円</div></div>' +
+        '<div class="kb-chip out"><div class="kb-label">つかった</div><div class="kb-val">−'+yen(out).slice(1)+'円</div></div>' +
+        '<div class="kb-chip left"><div class="kb-label">のこり</div><div class="kb-val">'+yen(left)+'</div></div>' +
+        '</div>' +
+        (q?'<div class="kb-quest">⚔️ おてつだい '+q+'回・'+yen(qsum)+'（うけとると「もらった」に入るよ）</div>':'') +
+        rows +
+        '<button class="mini-btn" style="width:100%;margin-top:10px;background:var(--lav)" onclick="openModal({type:\'closeMonth\',key:\''+g.key+'\'})">🔒 '+monthLabel(g.key)+'をしめる（月じめ）</button>' +
+        '</div>';
+    }
   });
   return h;
+}
+function ledgerRow(e, idx, locked){
+  const isQuest = e.type==='quest';
+  const plus = e.amount >= 0;
+  return '<div class="log-item'+(isQuest?' questrow':'')+'"><span class="log-date">'+fmtDate(e.ts)+'</span>' +
+    '<span class="log-label">'+esc(e.label)+(isQuest?'<span class="memo-chip">かせぎ</span>':'')+'</span>' +
+    '<span class="log-amount '+(plus?'plus':'minus')+'">'+(plus?'+':'−')+yen(Math.abs(e.amount)).slice(1)+'円</span>' +
+    (locked?'':'<button class="log-del" title="とりけす" onclick="openModal({type:\'undo\',idx:'+idx+'})">✕</button>') +
+    '</div>';
 }
 
 function setView(k){
@@ -515,6 +556,16 @@ function modalView(){
         '<div class="modal-btns"><button class="m-cancel" onclick="closeModal()">やめる</button>' +
         '<button class="m-ok" style="background:var(--coral-d);box-shadow:0 4px 0 #a83c18" onclick="undoEntry('+m.idx+')">とりけす</button></div>';
     }
+  }else if(m.type==="closeMonth"){
+    inner = '<span class="m-emoji">🔒</span><h3>'+monthLabel(m.key)+'をしめる？</h3>' +
+      '<p>この月のかけいぼを確定して、<br>あとから変えられないようにするよ。<br>おうちのひとと いっしょにかくにんしてね</p>' +
+      '<div class="modal-btns"><button class="m-cancel" onclick="closeModal()">やめる</button>' +
+      '<button class="m-ok" style="background:var(--lav);box-shadow:0 4px 0 #8f6bff" onclick="closeMonth(\''+m.key+'\')">しめる！</button></div>';
+  }else if(m.type==="openMonth"){
+    inner = '<span class="m-emoji">🔓</span><h3>'+monthLabel(m.key)+'のしめきりをとりけす？</h3>' +
+      '<p>この月のきろくを、また直せるようにするよ</p>' +
+      '<div class="modal-btns"><button class="m-cancel" onclick="closeModal()">やめる</button>' +
+      '<button class="m-ok" onclick="openMonth(\''+m.key+'\')">とりけす</button></div>';
   }else if(m.type==="reset"){
     inner = '<span class="m-emoji">⚠️</span><h3>ぜんぶリセットする？</h3><p>この端末のデータが全部消えます。<br>先に「書き出し」でバックアップを！</p>' +
       '<div class="modal-btns"><button class="m-cancel" onclick="closeModal()">やめる</button>' +
@@ -588,8 +639,19 @@ function deposit(){
   credit(kid(), "💝 "+label, amount, "manual");
   modal = null; render(); confetti(); cheer("+"+yen(amount)+"！");
 }
+function closeMonth(key){
+  const k = kid();
+  if(!k.closedMonths.includes(key)) k.closedMonths.push(key);
+  save(); modal = null; render(); confetti(); cheer("🔒 "+monthLabel(key)+"をしめたよ！", "おつかれさま！");
+}
+function openMonth(key){
+  const k = kid();
+  k.closedMonths = k.closedMonths.filter(x=>x!==key);
+  save(); modal = null; render(); cheer("🔓 "+monthLabel(key)+"をあけたよ");
+}
 function undoEntry(i){
   const k = kid(); const e = k.history[i]; if(!e){ modal=null; render(); return; }
+  if(k.closedMonths.includes(monthKeyOf(e.ts))){ modal=null; render(); cheer("🔒 しめた月は とりけせないよ"); return; }
   if(e.type==='quest'){
     // まだ月のかせぎに残っていればそこから、受け取り済みならちょきんから引く
     const fromMonth = Math.min(k.month.earned, e.amount);
