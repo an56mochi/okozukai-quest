@@ -98,6 +98,8 @@ main{padding:8px 16px 16px;max-width:520px;margin:0 auto}
 .memo-chip{font-size:9px;background:#f0e6d8;color:var(--sub);border-radius:6px;padding:1px 6px;margin-left:6px;font-weight:800;vertical-align:1px}
 .log-del{color:var(--sub);font-size:13px;font-weight:800;padding:6px 4px 6px 8px;opacity:.5;flex-shrink:0}
 .log-del:active{color:var(--coral-d);opacity:1}
+.undo-btn{background:#fff;border:1.5px solid var(--coral);color:var(--coral-d);font-weight:800;font-size:11px;padding:6px 9px;border-radius:10px;white-space:nowrap;flex-shrink:0}
+.undo-btn:active{background:var(--coral);color:#fff}
 
 /* かけいぼ */
 .kb-sum{display:flex;gap:8px;margin-bottom:10px}
@@ -377,6 +379,19 @@ function questView(k){
       '<div style="flex:1"></div>' +
       '<button class="q-btn" onclick="openModal({type:\'quest\',qid:\''+q.id+'\'})">できた！</button></div>';
   });
+  // さいきんのクリア（まちがえたら その場でとりけし）
+  const recent=[];
+  k.history.slice(0,30).forEach((e,idx)=>{
+    if(e.type==='quest' && recent.length<5 && !k.closedMonths.includes(monthKeyOf(e.ts))) recent.push({e,idx});
+  });
+  if(recent.length){
+    h += '<div class="section-title" style="margin-top:14px">📝 さいきんのクリア（まちがえたら とりけし！）</div><div class="card">' +
+      recent.map(x=>'<div class="log-item"><span class="log-date">'+fmtDate(x.e.ts)+'</span>' +
+        '<span class="log-label">'+esc(x.e.label)+'</span>' +
+        '<span class="log-amount plus">+'+yen(x.e.amount).slice(1)+'円</span>' +
+        '<button class="undo-btn" onclick="openModal({type:\'undo\',idx:'+x.idx+'})">↩️ とりけし</button></div>').join('') +
+      '</div>';
+  }
   h += '<div class="card empty" style="margin-top:12px">できたら「できた！」をおして、<br>おうちのひとに かくにんしてもらおう😊</div>';
   return h;
 }
